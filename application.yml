@@ -1,0 +1,541 @@
+management.endpoints.web.base-path: /admin
+health.config.enabled: false
+
+spring:
+  jackson:
+    serialization:
+      write_dates_as_timestamps: true
+
+hystrix:
+  threadpool.default:
+    coreSize: 50
+    maxQueueSize: 10
+    queueSizeRejectionThreshold: 10
+  command.default.execution.isolation.thread.timeoutInMilliseconds: 180000
+
+spring.data.mongodb.uri: mongodb://ufr_unif_user:123456@ufrvpndev:27053/ufr_unif
+
+async:
+  executor:
+    core-pool-size: 30
+    max-pool-size: 200
+    queue-capacity: 500
+    keepAliveSeconds: 360
+    threadNamePrefix: async-event-exec-
+  agent-status-executor:
+    core-pool-size: 50
+    max-pool-size: 200
+    queue-capacity: 1000
+    keepAliveSeconds: 360
+    threadNamePrefix: async-agent-status-exec-
+  scheduler-executor:
+    pool-size: 2
+    threadNamePrefix: scheduler-exec-
+
+avaya:
+  profiles:
+    -
+      name: AES
+      mock: false
+      peer: com.avaya.jtapi.tsapi.impl.TsapiPeerImpl
+      server:
+        ip: 172.28.59.63
+        port: 450
+      provider:
+        service: AVAYA#CM7#CSTA#AES02
+        user: tsapi_test_user
+        password: Tsapi_test_user01
+        debugPrinting: false
+      debugLevel: 0
+      maxThreadPoolSize: 50
+    -
+      name: MOCK
+      mock: true
+      mock-init-agents: true
+      peer: ru.alfabank.ufr.avaya.jtapi.mock.MockPeer
+      provider:
+        service: TEST-SERVICE
+        user: test
+        password: test
+      debugLevel: 0
+      maxThreadPoolSize: 50
+  #acdAddresses: 22010,22009
+  acdAddresses:
+  allowFilterEvents:
+    allowChangeEventToDrop: true
+    ignoringUnknownOnRinging: true
+    ignoringRingingAfterTalking: true
+    ignoringEventAfterDrop: true
+    ignoringTalkingBeforeRinging: true
+    ignoringTalkingWithoutCalledAddress: true
+    ignoringTalkingWithAlerting: true
+    ignoringDroppedImmediatelyAfterHeld: true
+  minInstances: 2
+  defaults:
+    acdAddress: 22009
+    agentPasswords:
+      - 1111
+      - LOGIN
+  agentPasswords:
+    24002: 1111
+  event-sender:
+    websocket: false
+    rest: false
+    hazelcast: true
+  millisecondsBetweenRingingAndTalking: 50
+  eventListener: ${eventListener:false}
+  useFastConnect: true
+  emptyUui: M=NULL
+
+node:
+  rootUri: http://${SERVICE_HOST}
+  eventCallUri: /ufr-unif-ui/api/avayaEvent
+  eventTerminalUri: /ufr-unif-ui/api/avayaTerminalEvent
+
+mongo-config:
+  aes-profile-key: activeAesProfile
+
+# Статусы агента, которые могут устанавливать пользователи
+# Описание статусов заполняется в словаре CMS, возможно в дальнейшем сможем брать их оттуда
+# или заведем свой справочник в БД для хранения этой информации
+agent-statuses:
+  unkhownStatus:
+    code: UNKNOWN
+    caption: Неизвестный тип перерыва
+  statuses:
+    -
+      code: READY
+      caption: Готов
+      state: READY
+      mode: MODE_AUTO_IN
+      reasonCode: 0
+    -
+      code: DINNER
+      caption: Обед
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 1
+    -
+      code: BREAK
+      caption: Перерыв
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 2
+    -
+      code: WC
+      caption: WC
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 3
+    -
+      code: TECHNICAL_PROBLEM
+      caption: Техническая проблема
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 4
+    -
+      code: WORK_WITH_HEAD
+      caption: Работа с руководителем
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 5
+    -
+      code: EDUCATION
+      caption: Обучение
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 6
+    -
+      code: HELP
+      caption: Помощь
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 7
+    -
+      code: AFTER_CALL
+      caption: After Call
+      state: WORK_NOT_READY
+      mode: MODE_NONE
+      reasonCode: 0
+    -
+      code: TIMEOUT
+      caption: TIME-OUT
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 8
+    -
+      code: OUTGOING_CALLS
+      caption: Исходящий обзвон
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 9
+    -
+      code: SYSTEM_BREAK
+      caption: Системный перерыв
+      state: NOT_READY
+      mode: MODE_NONE
+      reasonCode: 0
+
+health-check:
+  enabled: true
+  fixedRate: 5000
+  initialDelay: 0
+
+interaction:
+  hazelcast:
+    enabled: true
+    login: avayaConnector
+    password: 123259
+    #login: ufrprvbrd
+    #password: 123456
+    hosts:
+      #- ufrvpndev:5727
+      - localhost:5701
+    entities:
+      maps:
+        # Map для хранения информации о пользовательской информации для звонка
+        call-application-data:
+          name: avaya-call-application-data
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: hours
+            value: 1
+        # Map для хранения информации о пользовательской информации для агента
+        agent-application-data:
+          name: avaya-agent-application-data
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: hours
+            value: 2
+        # Map для хранения Health check информации для проверки жизни listener для агента
+        agents:
+          name: avaya-agents
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: seconds
+            value: 30
+        # Map для хранения Health check информации о работающих инстансах
+        instances:
+          name: avaya-instances
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: seconds
+            value: 30
+        # Map для хранения информации о последнем отправленном событии по агенту
+        last-agent-event:
+          name: avaya-last-agent-event
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: minutes
+            value: 1
+        # Map для хранения информации о терминале, на котором зарегистрирован агент
+        agent-terminal:
+          name: avaya-agent-terminal
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: days
+            value: 1
+        # Map для хранения информации об первоначальном UCID на звонке
+        call-ucid:
+          name: avaya-call-ucid
+          locktime:
+            unit: seconds
+            value: 1
+          lifetime:
+            unit: minutes
+            value: 5
+      topics:
+        terminal-event:
+          name: terminal-call-event
+        call-event:
+          name: avaya-call-event
+
+# Подмены для входящих звонков
+test-mode:
+  incoming:
+    enableReplaces: false
+    replaces:
+      3000: '0122273'
+      3001: 73832215333
+      3002: 73832215333
+      3003: 79031011197
+
+numbers:
+  ivr: 22010
+  ivrBk: 22010
+  helpPhoneNumber: 22010
+
+---
+spring:
+  profiles: local
+
+spring.data.mongodb.uri: mongodb://localhost:27017/ufr_unif
+
+avaya:
+  event-sender:
+    websocket: false
+    rest: false
+    hazelcast: true
+
+node:
+  rootUri: http://localhost:8080
+  eventCallUri: /api/avayaEvent
+  eventTerminalUri: /api/avayaTerminalEvent
+
+---
+spring:
+  profiles: local-loading
+
+spring.data.mongodb.uri: mongodb://localhost:27017/ufr_unif
+
+avaya:
+  profiles:
+    -
+      name: MOCK
+      mock: true
+      mock-init-agents: true
+      peer: ru.alfabank.ufr.avaya.jtapi.mock.MockPeer
+      provider:
+        service: TEST-SERVICE
+        user: test
+        password: test
+      debugLevel: 0
+      maxThreadPoolSize: 50
+    -
+      name: AES
+      mock: false
+      peer: com.avaya.jtapi.tsapi.impl.TsapiPeerImpl
+      server:
+        ip: 172.28.59.63
+        port: 450
+      provider:
+        service: AVAYA#CM7#CSTA#AES02
+        user: tsapi_test_user
+        password: Tsapi_test_user01
+        debugPrinting: false
+      debugLevel: 0
+      maxThreadPoolSize: 50
+
+healthCheck:
+  enabled: true
+  fixedRate: 5000
+  initialDelay: 10000
+
+interaction:
+  hazelcast:
+    enabled: true
+    entities:
+      maps:
+        # Map для хранения информации о пользовательской информации для звонка
+        call-application-data:
+          name: local-avaya-call-application-data
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: hours
+            value: 1
+        # Map для хранения информации о пользовательской информации для агента
+        agent-application-data:
+          name: local-avaya-agent-application-data
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: hours
+            value: 2
+        # Map для хранения Health check информации для проверки жизни listener для агента
+        agents:
+          name: local-avaya-agents
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: seconds
+            value: 30
+        # Map для хранения Health check информации о работающих инстансах
+        instances:
+          name: local-avaya-instances
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: seconds
+            value: 30
+        # Map для хранения информации о последнем отправленном событии по агенту
+        last-agent-event:
+          name: local-avaya-last-agent-event
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: minutes
+            value: 1
+        # Map для хранения информации о терминале, на котором зарегистрирован агент
+        agent-terminal:
+          name: local-avaya-agent-terminal
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: days
+            value: 1
+      topics:
+        terminal-event:
+          name: local-terminal-call-event
+        call-event:
+          name: local-avaya-call-event
+
+---
+spring:
+  profiles: local-dev
+
+spring.data.mongodb.uri: mongodb://ufr_unif_user:123456@ufrvpndev:27053/ufr_unif
+
+healthCheck:
+  enabled: true
+  fixedRate: 5000
+  initialDelay: 10000
+
+interaction:
+  hazelcast:
+    enabled: true
+    entities:
+      maps:
+        # Map для хранения информации о пользовательской информации для звонка
+        call-application-data:
+          name: local-avaya-call-application-data
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: hours
+            value: 1
+        # Map для хранения информации о пользовательской информации для агента
+        agent-application-data:
+          name: local-avaya-agent-application-data
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: hours
+            value: 2
+        # Map для хранения Health check информации для проверки жизни listener для агента
+        agents:
+          name: local-avaya-agents
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: seconds
+            value: 30
+        # Map для хранения Health check информации о работающих инстансах
+        instances:
+          name: local-avaya-instances
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: seconds
+            value: 30
+        # Map для хранения информации о последнем отправленном событии по агенту
+        last-agent-event:
+          name: local-avaya-last-agent-event
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: minutes
+            value: 1
+        # Map для хранения информации о терминале, на котором зарегистрирован агент
+        agent-terminal:
+          name: local-avaya-agent-terminal
+          locktime:
+            unit: minutes
+            value: 1
+          lifetime:
+            unit: days
+            value: 1
+      topics:
+        terminal-event:
+          name: local-terminal-call-event
+        call-event:
+          name: local-avaya-call-event
+
+---
+spring:
+  profiles: test
+
+avaya:
+  profiles:
+    -
+      name: MOCK
+      mock: true
+      mock-init-agents: true
+      peer: ru.alfabank.ufr.avaya.jtapi.mock.MockPeer
+      provider:
+        service: TEST-SERVICE
+        user: test
+        password: test
+      debugLevel: 0
+      maxThreadPoolSize: 50
+    -
+      name: AES
+      mock: false
+      peer: com.avaya.jtapi.tsapi.impl.TsapiPeerImpl
+      server:
+        ip: 172.28.59.63
+        port: 450
+      provider:
+        service: AVAYA#CM7#CSTA#AES02
+        user: tsapi_test_user
+        password: Tsapi_test_user01
+        debugPrinting: false
+      debugLevel: 0
+      maxThreadPoolSize: 50
+  acdAddresses:
+  #acdAddresses: 22010,22009
+  minInstances: 2
+  defaults:
+    acdAddress: 22009
+    agentPasswords:
+      - 1111
+      - LOGIN
+  agentPasswords:
+    24002: 1111
+  event-sender:
+    websocket: false
+    rest: false
+    hazelcast: true
+  millisecondsBetweenRingingAndTalking: 100
+  eventListener: ${eventListener:false}
+
+interaction:
+  hazelcast:
+    enabled: false
+
+node:
+  rootUri: http://localhost:8090
+  eventCallUri: /call-event
+  eventTerminalUri: /terminal-event
+
+numbers:
+  ivr: 20433
+  ivrBk: 20433
+  helpPhoneNumber: 22010
+
+---
+spring:
+  profiles: integration
