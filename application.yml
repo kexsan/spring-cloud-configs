@@ -8,7 +8,7 @@ spring:
 
 hystrix:
   threadpool.default:
-    coreSize: 50
+    coreSize: 60
     maxQueueSize: 10
     queueSizeRejectionThreshold: 10
   command.default.execution.isolation.thread.timeoutInMilliseconds: 180000
